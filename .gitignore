@@ -1,0 +1,7 @@
+/.venv/
+/db/
+/static/
+/media/
+/logs/
+__pycache__/
+/.idea/

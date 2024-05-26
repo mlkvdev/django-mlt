@@ -1,0 +1,79 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - prometheus_data:/prometheus
+      - ./services/prometheus:/etc/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
+  backend:
+    build: .
+    container_name: backend
+    command: gunicorn --bind 0.0.0.0:8000 -c gunicorn.conf.py config.wsgi:application
+    ports:
+      - 8001:8000
+    volumes:
+      - db_file:/app/db/
+      - static:/app/static/
+      - media:/app/media/
+      - logs:/app/logs/
+    environment:
+      - DEBUG=false
+      - TRACING_HOST=jaeger
+      - TRACING_PORT=4317
+  nginx:
+    build: ./services/nginx
+    container_name: nginx
+    volumes:
+      - static:/app/static/
+      - media:/app/media/
+    ports:
+      - 8000:80
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - logs:/app/logs/
+      - ./services/promtail/promtail.yml:/etc/promtail/promtail.yml
+    command: --config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - backend
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - 3100:3100
+    depends_on:
+      - promtail
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    ports:
+      - 4317:4317
+      - 16686:16686
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+  grafana:
+    image: grafana/grafana:10.1.10
+    container_name: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./services/grafana/dashboard.yml:/etc/grafana/provisioning/datasources/dashboard.yml
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=1
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+
+volumes:
+  prometheus_data:
+  db_file:
+  static:
+  media:
+  logs:
