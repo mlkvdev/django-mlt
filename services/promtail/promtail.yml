@@ -14,5 +14,10 @@ scrape_configs:
       - targets:
           - localhost
         labels:
-          __path__: "/app/logs/webapp.log"
+          __path__: "/app/logs/app.log"
           app: backend
+      - targets:
+          - localhost
+        labels:
+          __path__: "/app/logs/app-debug.log"
+          app: backend-debug

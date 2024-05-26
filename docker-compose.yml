@@ -23,6 +23,7 @@ services:
       - DEBUG=false
       - TRACING_HOST=jaeger
       - TRACING_PORT=4317
+    env_file: .env
   nginx:
     build: ./services/nginx
     container_name: nginx

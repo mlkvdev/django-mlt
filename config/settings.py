@@ -20,7 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jj(el&l1w#m#fnk+3ks&vm)8m6k-&(dn-3h0)=wb!b$-x67pxz'
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    default='django-insecure-jj(el&l1w#m#fnk+3ks&vm)8m6k-&(dn-3h0)=wb!b$-x67pxz'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = json.loads(os.getenv('DEBUG', 'true'))
@@ -144,9 +147,19 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'WARNING',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/app.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
             'formatter': 'trace_formatter',
-            'filename': 'logs/webapp.log',
+        },
+        'file-debug': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/app-debug.log'),
+            'maxBytes': 1024 * 1024 * 5,
+            'backupCount': 5,
+            'formatter': 'trace_formatter',
         },
         'console': {
             'class': 'logging.StreamHandler',
@@ -161,7 +174,7 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': ['console', 'file', 'file-debug'],
         'level': 'WARNING',
     },
 }
