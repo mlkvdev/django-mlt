@@ -12,8 +12,6 @@ services:
     build: .
     container_name: backend
     command: gunicorn --bind 0.0.0.0:8000 -c gunicorn.conf.py config.wsgi:application
-    ports:
-      - 8001:8000
     volumes:
       - db_file:/app/db/
       - static:/app/static/
@@ -21,7 +19,7 @@ services:
       - logs:/app/logs/
     environment:
       - DEBUG=false
-      - TRACING_HOST=jaeger
+      - TRACING_HOST=otel-collector
       - TRACING_PORT=4317
     env_file: .env
   nginx:
@@ -31,7 +29,7 @@ services:
       - static:/app/static/
       - media:/app/media/
     ports:
-      - 8000:80
+      - 80:80
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
@@ -48,15 +46,28 @@ services:
       - 3100:3100
     depends_on:
       - promtail
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    container_name: otel-collector
+    volumes:
+      - ./services/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 1888:1888
+      - 8888:8888
+      - 8889:8889
+      - 13133:13133
+      - 4317:4317
+      - 55679:55679
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     container_name: jaeger
     ports:
-      - 4317:4317
+      - 14250:14250
       - 16686:16686
     environment:
       - COLLECTOR_OTLP_ENABLED=true
-      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+  #      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
   grafana:
     image: grafana/grafana:10.1.10
     container_name: grafana
